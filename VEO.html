@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タイピングコロシアム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Noto Sans JP',sans-serif;}
+
+/* ══════════════════════════════
+TITLE SCREEN
+══════════════════════════════ */
+#screen-title{
+position:fixed;inset:0;z-index:100;
+background:linear-gradient(160deg,#1a0a00 0%,#3a1800 40%,#1a0a00 100%);
+display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+.title-logo{
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:clamp(28px,5vw,52px);font-weight:900;
+color:#fff;text-align:center;
+text-shadow:0 0 30px rgba(255,200,50,0.8),0 3px 0 #8b4000;
+letter-spacing:4px;
+}
+.title-logo span{color:#ffd700;}
+.title-sub{font-size:13px;color:rgba(255,220,150,0.7);letter-spacing:6px;}
+.monster-select-label{font-size:14px;color:#ffd700;letter-spacing:3px;margin-top:10px;}
+.monster-grid{
+display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+max-width:700px;width:100%;padding:0 16px;
+}
+.monster-card{
+background:rgba(0,0,0,0.5);border:2px solid rgba(255,200,50,0.3);
+padding:10px 8px;text-align:center;cursor:pointer;
+transition:all 0.15s;border-radius:4px;
+}
+.monster-card:hover,.monster-card.sel{
+border-color:#ffd700;background:rgba(255,200,50,0.15);
+transform:translateY(-2px);box-shadow:0 4px 16px rgba(255,200,50,0.4);
+}
+.mc-sprite{font-size:32px;line-height:1.2;}
+.mc-name{font-size:11px;color:#fff;margin-top:4px;font-weight:700;}
+.mc-rank{font-size:9px;color:#ffd700;letter-spacing:1px;}
+.mc-hp{font-size:9px;color:rgba(255,255,255,0.5);margin-top:2px;}
+
+.btn-start{
+padding:14px 50px;
+background:linear-gradient(180deg,#ffd700 0%,#e08000 100%);
+border:none;border-radius:4px;
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:18px;font-weight:900;
+color:#3a1800;cursor:pointer;letter-spacing:4px;
+box-shadow:0 4px 0 #8b4000,0 6px 20px rgba(255,200,0,0.4);
+transition:all 0.12s;
+}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 6px 0 #8b4000,0 10px 30px rgba(255,200,0,0.5);}
+.btn-start:active{transform:translateY(2px);box-shadow:0 2px 0 #8b4000;}
+.btn-start:disabled{opacity:0.4;cursor:default;transform:none;}
+
+/* ══════════════════════════════
+GAME SCREEN
+══════════════════════════════ */
+#screen-game{
+position:fixed;inset:0;display:none;flex-direction:column;
+background:#c8a060;
+overflow:hidden;
+}
+
+/* Arena background */
+.arena-bg{
+position:absolute;inset:0;z-index:0;
+background:
+/* ground */
+linear-gradient(180deg, transparent 55%, #b08040 55%, #c8a060 65%, #d4b070 100%),
+/* sky/stands gradient */
+linear-gradient(180deg,#7090c0 0%,#a0b8d8 30%,#c8a060 55%);
+}
+.arena-bg::before{
+/* stands pillars texture */
+content:’’;position:absolute;inset:0;
+background:
+repeating-linear-gradient(90deg,
+rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 18px,
+transparent 18px, transparent 40px
+);
+height:55%;
+}
+.arena-bg::after{
+/* crowd silhouette band */
+content:’’;position:absolute;top:28%;left:0;right:0;height:18%;
+background:linear-gradient(180deg,
+rgba(80,50,20,0.4) 0%,
+rgba(120,80,30,0.2) 50%,
+transparent 100%
+);
+}
+/* shadow on ground */
+.arena-ground-shadow{
+position:absolute;bottom:0;left:0;right:0;height:35%;z-index:1;
+background:linear-gradient(180deg,transparent 0%,rgba(100,60,10,0.3) 100%);
+pointer-events:none;
+}
+
+/* ── STATUS BAR (top) ── */
+.status-bar{
+position:relative;z-index:10;
+display:grid;grid-template-columns:1fr auto 1fr;
+align-items:stretch;
+background:rgba(0,0,0,0.75);
+border-bottom:2px solid rgba(255,200,50,0.4);
+padding:0;
+min-height:72px;
+}
+.status-player,.status-enemy{
+display:flex;flex-direction:column;justify-content:center;
+padding:8px 14px;gap:4px;
+}
+.status-enemy{align-items:flex-end;}
+
+.lv-row{display:flex;align-items:center;gap:8px;}
+.lv-badge{
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:10px;font-weight:700;color:#ffd700;
+background:rgba(255,200,0,0.15);border:1px solid rgba(255,200,0,0.4);
+padding:1px 5px;border-radius:2px;white-space:nowrap;
+}
+.lv-num{font-size:18px;font-weight:900;color:#fff;line-height:1;}
+
+.bar-row{display:flex;align-items:center;gap:6px;}
+.bar-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);min-width:24px;text-align:right;}
+.bar-wrap{flex:1;height:14px;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;position:relative;}
+.bar-fill{height:100%;transition:width 0.3s ease;border-radius:2px;}
+.bar-fill.hp{background:linear-gradient(90deg,#2080ff,#60b0ff);}
+.bar-fill.sc{background:linear-gradient(90deg,#e83030,#ff6060);}
+.bar-num{font-size:10px;color:rgba(255,255,255,0.6);white-space:nowrap;min-width:70px;text-align:right;}
+.status-enemy .bar-row{flex-direction:row-reverse;}
+.status-enemy .bar-num{text-align:left;min-width:70px;}
+.status-enemy .bar-label{text-align:left;}
+
+/* center timer */
+.center-timer{
+display:flex;align-items:center;justify-content:center;
+padding:0 10px;
+}
+.timer-circle{
+width:70px;height:70px;position:relative;
+}
+.timer-svg{width:100%;height:100%;transform:rotate(-90deg);}
+.timer-track{fill:none;stroke:rgba(255,255,255,0.15);stroke-width:5;}
+.timer-fill{fill:none;stroke:#4dd0ff;stroke-width:5;stroke-linecap:round;
+stroke-dasharray:188.5;stroke-dashoffset:0;transition:stroke-dashoffset 0.1s linear,stroke 0.3s;}
+.timer-text{
+position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:16px;font-weight:900;color:#fff;
+}
+
+/* ── BATTLE AREA ── */
+.battle-area{
+position:relative;z-index:5;
+flex:1;display:flex;align-items:flex-end;justify-content:space-between;
+padding:0 6% 2%;
+}
+
+/* Characters */
+.char-wrap{display:flex;flex-direction:column;align-items:center;gap:0;}
+.char-sprite{
+font-size:clamp(80px,12vw,130px);
+line-height:1;
+filter:drop-shadow(2px 4px 8px rgba(0,0,0,0.5));
+transition:transform 0.1s;
+}
+.char-shadow{
+width:80%;height:12px;
+background:radial-gradient(ellipse,rgba(0,0,0,0.4) 0%,transparent 70%);
+margin-top:-4px;
+}
+
+/* ── WORD AREA (center overlay) ── */
+.word-area{
+position:absolute;left:50%;top:50%;
+transform:translate(-50%,-50%);
+z-index:20;
+width:min(680px,88vw);
+display:flex;flex-direction:column;gap:0;
+}
+
+/* Main word bar */
+.word-bar{
+background:linear-gradient(180deg,#60d840 0%,#30b020 60%,#208010 100%);
+border:3px solid rgba(255,255,255,0.4);
+border-radius:6px 6px 0 0;
+padding:12px 24px 10px;
+text-align:center;
+box-shadow:0 4px 20px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.3);
+position:relative;overflow:hidden;
+}
+.word-bar::before{
+content:’’;position:absolute;top:0;left:0;right:0;height:50%;
+background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent);
+pointer-events:none;
+}
+.word-kanji{
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:clamp(20px,3.5vw,32px);font-weight:900;
+color:#fff;
+text-shadow:0 1px 4px rgba(0,0,0,0.4);
+letter-spacing:4px;line-height:1.2;
+}
+.word-roman{
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:clamp(22px,3.8vw,36px);font-weight:900;
+letter-spacing:3px;line-height:1.3;
+}
+.ch-done{color:#003300;}
+.ch-cur{color:#ffff00;text-shadow:0 0 8px rgba(255,255,0,0.8);}
+.ch-rest{color:rgba(255,255,255,0.9);}
+
+/* Next word bar */
+.next-bar{
+background:rgba(0,0,0,0.65);
+border:3px solid rgba(255,255,255,0.2);
+border-top:none;
+border-radius:0 0 6px 6px;
+padding:5px 18px;
+display:flex;align-items:center;gap:10px;
+}
+.next-label{
+font-size:11px;font-weight:700;
+color:rgba(255,255,255,0.6);letter-spacing:2px;white-space:nowrap;
+}
+.next-word{font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:2px;}
+
+/* Time bar under word */
+.word-time-bar{
+height:6px;background:rgba(0,0,0,0.4);
+border-radius:3px;overflow:hidden;margin-top:4px;
+}
+.word-time-fill{
+height:100%;background:linear-gradient(90deg,#ffd700,#ff8800);
+transition:width 0.08s linear;border-radius:3px;
+}
+.word-time-fill.danger{background:linear-gradient(90deg,#ff2020,#ff6060);}
+
+/* Floating damage */
+.float-dmg{
+position:fixed;
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-weight:900;
+pointer-events:none;z-index:100;
+animation:floatUp 1s ease forwards;
+text-shadow:2px 2px 0 rgba(0,0,0,0.6),-1px -1px 0 rgba(0,0,0,0.4);
+}
+@keyframes floatUp{
+0%{opacity:1;transform:translateY(0) scale(1);}
+20%{transform:translateY(-20px) scale(1.2);}
+100%{opacity:0;transform:translateY(-80px) scale(0.8);}
+}
+.float-dmg.player{color:#ff2020;font-size:52px;}
+.float-dmg.enemy{color:#ffff00;font-size:48px;}
+.float-miss{color:#fff;font-size:24px;}
+
+/* Attack flash overlay */
+.hit-overlay{
+position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0;
+transition:opacity 0.1s;
+}
+.hit-overlay.flash{background:rgba(255,50,50,0.3);opacity:1;}
+
+/* Shake animation */
+@keyframes shake{
+0%,100%{transform:translateX(0)}
+15%{transform:translateX(-10px)}
+35%{transform:translateX(10px)}
+55%{transform:translateX(-7px)}
+75%{transform:translateX(7px)}
+}
+.shaking{animation:shake 0.35s ease;}
+
+/* Char attack animations */
+@keyframes playerAtk{
+0%{transform:translateX(0) scaleX(1);}
+40%{transform:translateX(min(120px,15vw)) scaleX(1);}
+100%{transform:translateX(0) scaleX(1);}
+}
+@keyframes enemyHit{
+0%,100%{filter:drop-shadow(2px 4px 8px rgba(0,0,0,0.5));}
+30%{filter:drop-shadow(0 0 20px #ffff00) brightness(2);}
+}
+@keyframes enemyAtk{
+0%{transform:translateX(0) scaleX(-1);}
+40%{transform:translateX(min(-120px,-15vw)) scaleX(-1);}
+100%{transform:translateX(0) scaleX(-1);}
+}
+@keyframes playerHitAnim{
+0%,100%{filter:drop-shadow(2px 4px 8px rgba(0,0,0,0.5));}
+30%{filter:drop-shadow(0 0 20px #ff4444) brightness(1.5);}
+}
+@keyframes idleBob{
+0%,100%{transform:translateY(0);}
+50%{transform:translateY(-8px);}
+}
+.enemy-idle{animation:idleBob 2.2s ease-in-out infinite;}
+.enemy-sprite-wrap{transform:scaleX(-1);}
+
+/* ── RESULT OVERLAY ── */
+#screen-result{
+position:fixed;inset:0;z-index:200;
+background:rgba(0,0,0,0.82);
+display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.result-badge{
+font-family:‘M PLUS Rounded 1c’,sans-serif;
+font-size:clamp(40px,8vw,72px);font-weight:900;
+letter-spacing:6px;
+text-shadow:0 0 40px currentColor;
+}
+.result-badge.win{color:#ffd700;}
+.result-badge.lose{color:#ff4444;}
+.result-grid{
+display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+max-width:480px;width:100%;padding:0 16px;
+}
+.rstat{
+background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);
+padding:10px;text-align:center;border-radius:4px;
+}
+.rstat-label{font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;}
+.rstat-val{font-family:‘M PLUS Rounded 1c’,sans-serif;font-size:26px;font-weight:900;color:#ffd700;}
+.result-msg{font-size:13px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-align:center;line-height:1.8;}
+.btn-row{display:flex;gap:12px;}
+.btn-action{
+padding:12px 32px;border-radius:4px;border:none;cursor:pointer;
+font-family:‘M PLUS Rounded 1c’,sans-serif;font-size:15px;font-weight:900;
+letter-spacing:2px;transition:all 0.12s;
+}
+.btn-action.primary{
+background:linear-gradient(180deg,#ffd700,#e08000);color:#3a1800;
+box-shadow:0 3px 0 #8b4000;
+}
+.btn-action.secondary{
+background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.3);
+}
+.btn-action:hover{transform:translateY(-1px);}
+.btn-action:active{transform:translateY(1px);}
+</style>
+
+</head>
+<body>
+
+<div id="hit-overlay" class="hit-overlay"></div>
+
+<!-- ══ TITLE ══ -->
+
+<div id="screen-title">
+  <div class="title-logo">タイピング<span>コロシアム</span></div>
+  <div class="title-sub">TYPING COLOSSEUM</div>
+  <div class="monster-select-label">▼ 対戦相手を選ぼう</div>
+  <div class="monster-grid" id="monster-grid"></div>
+  <button class="btn-start" id="btn-start" disabled>⚔ バトル開始！</button>
+</div>
+
+<!-- ══ GAME ══ -->
+
+<div id="screen-game">
+  <!-- Arena background -->
+  <div class="arena-bg"></div>
+  <div class="arena-ground-shadow"></div>
+
+  <!-- Status bar -->
+
+  <div class="status-bar">
+    <!-- Player left -->
+    <div class="status-player">
+      <div class="lv-row">
+        <span class="lv-badge">LV.</span>
+        <span class="lv-num" id="player-lv">1</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">HP</span>
+        <div class="bar-wrap"><div class="bar-fill hp" id="player-hp-bar" style="width:100%"></div></div>
+        <span class="bar-num" id="player-hp-num">120/120</span>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">SC</span>
+        <div class="bar-wrap"><div class="bar-fill sc" id="player-sc-bar" style="width:0%"></div></div>
+        <span class="bar-num" id="player-sc-num">0/40</span>
+      </div>
+    </div>
+
+```
+<!-- Center timer -->
+<div class="center-timer">
+  <div class="timer-circle">
+    <svg class="timer-svg" viewBox="0 0 70 70">
+      <circle class="timer-track" cx="35" cy="35" r="30"/>
+      <circle class="timer-fill" id="timer-circle-fill" cx="35" cy="35" r="30"/>
+    </svg>
+    <div class="timer-text" id="timer-text">--</div>
+  </div>
+</div>
+
+<!-- Enemy right -->
+<div class="status-enemy">
+  <div class="lv-row" style="justify-content:flex-end">
+    <span class="lv-num" id="enemy-lv">1</span>
+    <span class="lv-badge">LV.</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-num" id="enemy-hp-num">100/100</span>
+    <div class="bar-wrap"><div class="bar-fill hp" id="enemy-hp-bar" style="width:100%"></div></div>
+    <span class="bar-label">HP</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-num" id="enemy-sc-num">0/40</span>
+    <div class="bar-wrap"><div class="bar-fill sc" id="enemy-sc-bar" style="width:0%"></div></div>
+    <span class="bar-label">SC</span>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- Battle area -->
+
+  <div class="battle-area">
+    <!-- Player character -->
+    <div class="char-wrap" id="player-char">
+      <div class="char-sprite" id="player-sprite">🐉</div>
+      <div class="char-shadow"></div>
+    </div>
+
+```
+<!-- Word display (center) -->
+<div class="word-area" id="word-area">
+  <div class="word-bar">
+    <div class="word-kanji" id="word-kanji">　</div>
+    <div class="word-roman" id="word-roman">　</div>
+  </div>
+  <div class="next-bar">
+    <span class="next-label">NEXT:</span>
+    <span class="next-word" id="next-word">　</span>
+  </div>
+  <div class="word-time-bar">
+    <div class="word-time-fill" id="word-time-fill" style="width:100%"></div>
+  </div>
+</div>
+
+<!-- Enemy character -->
+<div class="char-wrap enemy-sprite-wrap" id="enemy-char">
+  <div class="char-sprite enemy-idle" id="enemy-sprite">🪨</div>
+  <div class="char-shadow"></div>
+</div>
+```
+
+  </div>
+
+  <!-- Hidden input -->
+
+<input type="text" id="type-input" style="position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;"
+autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+</div>
+
+<!-- ══ RESULT ══ -->
+
+<div id="screen-result">
+  <div class="result-badge" id="result-badge">VICTORY</div>
+  <div class="result-msg" id="result-msg"></div>
+  <div class="result-grid">
+    <div class="rstat"><div class="rstat-label">SCORE</div><div class="rstat-val" id="r-score">0</div></div>
+    <div class="rstat"><div class="rstat-label">WPM</div><div class="rstat-val" id="r-wpm">0</div></div>
+    <div class="rstat"><div class="rstat-label">精度</div><div class="rstat-val" id="r-acc">0%</div></div>
+    <div class="rstat"><div class="rstat-label">MAX COMBO</div><div class="rstat-val" id="r-combo">0</div></div>
+    <div class="rstat"><div class="rstat-label">ワード数</div><div class="rstat-val" id="r-words">0</div></div>
+    <div class="rstat"><div class="rstat-label">タイピングPT</div><div class="rstat-val" id="r-pts">0</div></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-action primary" id="btn-retry">↩ 再挑戦</button>
+    <button class="btn-action secondary" id="btn-tolist">◀ 選択に戻る</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════
+const MONSTERS = [
+  {name:'ゴーエム',   sprite:'🪨', hp:5000,  maxHp:5000,  atk:6,  atkInt:5000, speed:1.8, words:'easy',   rank:'G', lv:1},
+  {name:'ドフラミン', sprite:'🦩', hp:6000,  maxHp:6000,  atk:8,  atkInt:4500, speed:1.6, words:'easy',   rank:'G', lv:1},
+  {name:'まさお',     sprite:'🐻', hp:8000,  maxHp:8000,  atk:12, atkInt:4000, speed:1.4, words:'easy2',  rank:'F', lv:1},
+  {name:'サスケェ',   sprite:'🥷', hp:12000, maxHp:12000, atk:18, atkInt:3200, speed:1.1, words:'normal', rank:'E', lv:1},
+  {name:'邪狩',       sprite:'🐼', hp:18000, maxHp:18000, atk:24, atkInt:2700, speed:0.92,words:'normal', rank:'D', lv:1},
+  {name:'ドラゴン',   sprite:'🐉', hp:28000, maxHp:28000, atk:32, atkInt:2300, speed:0.78,words:'hard',   rank:'C', lv:1},
+  {name:'暗黒卿',     sprite:'👹', hp:40000, maxHp:40000, atk:45, atkInt:2000, speed:0.65,words:'hard',   rank:'B', lv:1},
+  {name:'覇王',       sprite:'😈', hp:60000, maxHp:60000, atk:60, atkInt:1800, speed:0.55,words:'vhard',  rank:'A', lv:1},
+  {name:'∞カオス',    sprite:'🌌', hp:90000, maxHp:90000, atk:80, atkInt:1500, speed:0.42,words:'vhard',  rank:'S', lv:1},
+  {name:'赤',         sprite:'🍅', hp:10000, maxHp:10000, atk:15, atkInt:3500, speed:1.0, words:'normal', rank:'E', lv:1},
+];
+
+const SECRET_MONSTER = {
+  name:'👑 れお神', sprite:'🌟', hp:999999, maxHp:999999,
+  atk:1, atkInt:99999, speed:0.25, words:'vhard', rank:'神', lv:99, secret:true,
+};
+
+const WORDS = {
+  easy:[
+    {w:'eda',k:'枝'},{w:'umi',k:'海'},{w:'hana',k:'花'},{w:'neko',k:'猫'},
+    {w:'yama',k:'山'},{w:'kawa',k:'川'},{w:'mori',k:'森'},{w:'sora',k:'空'},
+    {w:'hi',k:'火'},{w:'kaze',k:'風'},{w:'tsuki',k:'月'},{w:'hoshi',k:'星'},
+    {w:'ame',k:'雨'},{w:'yuki',k:'雪'},{w:'kumo',k:'雲'},{w:'ishi',k:'石'},
+  ],
+  easy2:[
+    {w:'tsuyoi',k:'強い'},{w:'hayai',k:'速い'},{w:'akai',k:'赤い'},
+    {w:'shiroi',k:'白い'},{w:'kuroi',k:'黒い'},{w:'takai',k:'高い'},
+    {w:'nagai',k:'長い'},{w:'chiisai',k:'小さい'},{w:'ookii',k:'大きい'},
+    {w:'aoi',k:'青い'},{w:'kiiroi',k:'黄色い'},{w:'fukai',k:'深い'},
+  ],
+  normal:[
+    {w:'katana',k:'刀'},{w:'yoroi',k:'鎧'},{w:'yumiya',k:'弓矢'},
+    {w:'tatakai',k:'戦い'},{w:'chikara',k:'力'},{w:'yuuki',k:'勇気'},
+    {w:'kaifuku',k:'回復'},{w:'mahou',k:'魔法'},{w:'senshi',k:'戦士'},
+    {w:'ryuu',k:'龍'},{w:'akuma',k:'悪魔'},{w:'tensai',k:'天才'},
+    {w:'shihai',k:'支配'},{w:'kurayami',k:'暗闇'},{w:'hikari',k:'光'},
+  ],
+  hard:[
+    {w:'rengoku',k:'煉獄'},{w:'musou',k:'無双'},{w:'kyoufu',k:'恐怖'},
+    {w:'zettai',k:'絶対'},{w:'fumetsu',k:'不滅'},{w:'hakai',k:'破壊'},
+    {w:'souzou',k:'創造'},{w:'mugen',k:'無限'},{w:'raikouken',k:'雷光剣'},
+    {w:'kaimetsu',k:'壊滅'},{w:'hametsu',k:'破滅'},
+  ],
+  vhard:[
+    {w:'mugentairyoku',k:'無限大力'},{w:'zekkaifuuha',k:'絶界封破'},
+    {w:'soudainaaru',k:'壮大なる'},{w:'kakuseishiro',k:'覚醒しろ'},
+    {w:'shinpannohi',k:'審判の日'},{w:'mugenzankoku',k:'無限残酷'},
+    {w:'tenshouryuu',k:'天翔龍'},{w:'saigonochikara',k:'最後の力'},
+  ],
+};
+
+const PLAYER = {name:'ケルビン', sprite:'🦎', hp:6000, maxHp:6000};
+const SC_MAX = 40;
+
+// ══════════════════════════════════════════════════════
+//  CHEAT SYSTEM
+// ══════════════════════════════════════════════════════
+const CHEATS = { godMode: false, oneHit: false };
+
+const SECRET_CODES = [
+  { trigger:'reokami', effect:'god',    msg:'👑 れお神 降臨！\n無敵モード解放！ダメージ 0！',     color:'#ffd700' },
+  { trigger:'reogod',  effect:'onehit', msg:'⚡ れお神の怒り！\nワンパンモード解放！',             color:'#ff4400' },
+  { trigger:'reomax',  effect:'both',   msg:'🌟 れお神・真の姿！\n無敵＋ワンパン 同時解放！',      color:'#ff44ff' },
+  { trigger:'reoreset',effect:'reset',  msg:'🔄 チートリセット\nれお神は去っていった…',            color:'#aaaaaa' },
+];
+
+let secretBuf = '';
+
+function checkSecretCodes(ch) {
+  secretBuf = (secretBuf + ch).slice(-20);
+  for (const sc of SECRET_CODES) {
+    if (secretBuf.endsWith(sc.trigger)) {
+      secretBuf = '';
+      applyCheat(sc);
+      return;
+    }
+  }
+}
+
+function applyCheat(sc) {
+  if (sc.effect === 'god')    { CHEATS.godMode = true; }
+  if (sc.effect === 'onehit') { CHEATS.oneHit  = true; }
+  if (sc.effect === 'both')   { CHEATS.godMode = true; CHEATS.oneHit = true; }
+  if (sc.effect === 'reset')  {
+    CHEATS.godMode = false; CHEATS.oneHit = false;
+    injectRainbow(false);
+    document.getElementById('player-sprite').style.filter = '';
+  }
+
+  // Add secret monster if not already present
+  if ((CHEATS.godMode || CHEATS.oneHit) && !MONSTERS.find(m => m.secret)) {
+    MONSTERS.push(SECRET_MONSTER);
+    initTitle();
+  }
+
+  // Visual feedback on player sprite
+  if (CHEATS.godMode && CHEATS.oneHit) {
+    document.getElementById('player-sprite').style.filter =
+      'drop-shadow(0 0 24px #ff44ff) drop-shadow(0 0 48px #ffd700)';
+  } else if (CHEATS.godMode) {
+    document.getElementById('player-sprite').style.filter =
+      'drop-shadow(0 0 20px #ffd700) drop-shadow(0 0 40px #ffaa00)';
+  } else if (CHEATS.oneHit) {
+    document.getElementById('player-sprite').style.filter =
+      'drop-shadow(0 0 20px #ff4400) drop-shadow(0 0 40px #ff8800)';
+  } else {
+    document.getElementById('player-sprite').style.filter = '';
+  }
+
+  showCheatToast(sc.msg.replace(/\\n/g,'\n'), sc.color);
+  updateCheatBadge();
+}
+
+function showCheatToast(msg, color) {
+  let old = document.getElementById('cheat-toast');
+  if (old) old.remove();
+  const el = document.createElement('div');
+  el.id = 'cheat-toast';
+  el.style.cssText = [
+    'position:fixed','top:50%','left:50%',
+    'transform:translate(-50%,-50%) scale(0.5)',
+    'background:rgba(0,0,0,0.93)',
+    'border:3px solid '+color,
+    'color:'+color,
+    "font-family:\'M PLUS Rounded 1c\',sans-serif",
+    'font-weight:900','font-size:clamp(16px,2.5vw,26px)',
+    'padding:22px 44px','border-radius:8px',
+    'text-align:center','z-index:9999',
+    'letter-spacing:2px','line-height:1.8',
+    'white-space:pre-line',
+    'transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s',
+    'opacity:0','pointer-events:none',
+    'text-shadow:0 0 20px '+color,
+    'box-shadow:0 0 40px '+color+'55',
+  ].join(';');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => {
+    el.style.transform = 'translate(-50%,-50%) scale(1)';
+    el.style.opacity   = '1';
+  });
+  setTimeout(() => {
+    el.style.opacity   = '0';
+    el.style.transform = 'translate(-50%,-50%) scale(0.8)';
+    setTimeout(() => el.remove(), 400);
+  }, 3000);
+}
+
+function updateCheatBadge() {
+  let badge = document.getElementById('cheat-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'cheat-badge';
+    badge.style.cssText = 'position:fixed;bottom:10px;right:12px;z-index:9998;display:flex;flex-direction:column;align-items:flex-end;gap:3px;pointer-events:none;';
+    document.body.appendChild(badge);
+  }
+  const items = [];
+  if (CHEATS.godMode) items.push('<span style="color:#ffd700;background:rgba(0,0,0,0.75);padding:2px 8px;border-radius:4px;border:1px solid #ffd70066;font-family:sans-serif;font-size:11px;font-weight:700;">🛡️ 無敵モード</span>');
+  if (CHEATS.oneHit)  items.push('<span style="color:#ff6600;background:rgba(0,0,0,0.75);padding:2px 8px;border-radius:4px;border:1px solid #ff660066;font-family:sans-serif;font-size:11px;font-weight:700;">💥 ワンパンモード</span>');
+  badge.innerHTML = items.join('');
+}
+
+function injectRainbow(on) {
+  let tag = document.getElementById('rainbow-style');
+  if (on && !tag) {
+    tag = document.createElement('style');
+    tag.id = 'rainbow-style';
+    tag.textContent = '@keyframes rainbow{0%{filter:hue-rotate(0deg) brightness(1.2)}100%{filter:hue-rotate(360deg) brightness(1.2)}}.word-bar{animation:rainbow 1s linear infinite!important}.status-bar{animation:rainbow 2s linear infinite!important}';
+    document.head.appendChild(tag);
+  } else if (!on && tag) { tag.remove(); }
+}
+
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+let G = {};
+let selectedMonster = null;
+
+// ══════════════════════════════════════════════════════
+//  TITLE
+// ══════════════════════════════════════════════════════
+function initTitle() {
+  const grid = document.getElementById('monster-grid');
+  grid.innerHTML = '';
+  MONSTERS.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'monster-card';
+    card.innerHTML = `
+      <div class="mc-sprite">${m.sprite}</div>
+      <div class="mc-name">${m.name}</div>
+      <div class="mc-rank">Rank ${m.rank}</div>
+      <div class="mc-hp">HP ${m.maxHp.toLocaleString()}</div>
+    `;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.monster-card').forEach(c => c.classList.remove('sel'));
+      card.classList.add('sel');
+      selectedMonster = m;
+      document.getElementById('btn-start').disabled = false;
+    });
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (selectedMonster) startGame(selectedMonster);
+});
+document.getElementById('btn-retry').addEventListener('click', () => {
+  if (G.enemy) startGame(G.enemy);
+});
+document.getElementById('btn-tolist').addEventListener('click', () => {
+  showScreen('title');
+});
+
+// ══════════════════════════════════════════════════════
+//  SCREENS
+// ══════════════════════════════════════════════════════
+function showScreen(name) {
+  document.getElementById('screen-title').style.display  = name==='title'  ? 'flex' : 'none';
+  document.getElementById('screen-game').style.display   = name==='game'   ? 'flex' : 'none';
+  document.getElementById('screen-result').style.display = name==='result' ? 'flex' : 'none';
+  if (name === 'game') document.getElementById('type-input').focus();
+}
+
+// ══════════════════════════════════════════════════════
+//  START GAME
+// ══════════════════════════════════════════════════════
+function startGame(enemy) {
+  clearInterval(G.wordTimer);
+  clearInterval(G.atkTimer);
+
+  const pool = buildPool(enemy.words);
+  G = {
+    enemy,
+    playerHp: PLAYER.maxHp, playerMaxHp: PLAYER.maxHp,
+    playerSc: 0,
+    enemyHp: enemy.maxHp, enemyMaxHp: enemy.maxHp,
+    enemySc: 0,
+    pool, poolIdx: 0,
+    currentWord: null, inputPos: 0,
+    nextWordEntry: null,
+    wordTimer: null, atkTimer: null,
+    timeLeft: 0, maxTime: 0,
+    startTime: Date.now(), wpm: 0,
+    score: 0, combo: 0, maxCombo: 0,
+    totalKeys: 0, correctKeys: 0, wordsCleared: 0,
+    dead: false,
+  };
+
+  document.getElementById('player-sprite').textContent = PLAYER.sprite;
+  document.getElementById('enemy-sprite').textContent  = enemy.sprite;
+  document.getElementById('player-lv').textContent = '1';
+  document.getElementById('enemy-lv').textContent  = '1';
+
+  updateBars();
+  showScreen('game');
+
+  // Enemy auto-attack timer
+  G.atkTimer = setInterval(enemyAutoAttack, enemy.atkInt);
+
+  // First word
+  pickNextWord();
+  renderWord();
+  startWordTimer();
+}
+
+function buildPool(key) {
+  const arr = [...WORDS[key]];
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function pickNextWord() {
+  if (G.poolIdx >= G.pool.length) {
+    G.pool = buildPool(G.enemy.words);
+    G.poolIdx = 0;
+  }
+  G.currentWord = G.pool[G.poolIdx++];
+  G.inputPos    = 0;
+
+  // Peek at next
+  if (G.poolIdx >= G.pool.length) {
+    const next = buildPool(G.enemy.words);
+    G.nextWordEntry = next[0];
+  } else {
+    G.nextWordEntry = G.pool[G.poolIdx];
+  }
+  document.getElementById('type-input').value = '';
+}
+
+// ══════════════════════════════════════════════════════
+//  WORD TIMER
+// ══════════════════════════════════════════════════════
+function startWordTimer() {
+  G.maxTime  = G.currentWord.w.length * G.enemy.speed + 1.5;
+  G.timeLeft = G.maxTime;
+  clearInterval(G.wordTimer);
+  G.wordTimer = setInterval(tickWord, 50);
+}
+
+function tickWord() {
+  G.timeLeft -= 0.05;
+  const pct = Math.max(0, G.timeLeft / G.maxTime) * 100;
+
+  const circ   = 188.5;
+  const offset = circ * (1 - pct/100);
+  document.getElementById('timer-circle-fill').style.strokeDashoffset = offset;
+  document.getElementById('timer-text').textContent = G.timeLeft.toFixed(1);
+  document.getElementById('timer-circle-fill').style.stroke =
+    pct < 25 ? '#ff4444' : pct < 50 ? '#ffaa00' : '#4dd0ff';
+
+  const fill = document.getElementById('word-time-fill');
+  fill.style.width = pct + '%';
+  fill.classList.toggle('danger', pct < 25);
+
+  // WPM
+  const elapsed = (Date.now() - G.startTime) / 60000;
+  if (elapsed > 0.02) G.wpm = Math.round(G.wordsCleared / elapsed);
+
+  if (G.timeLeft <= 0) {
+    clearInterval(G.wordTimer);
+    onWordFail();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════
+function renderWord() {
+  const w = G.currentWord.w, p = G.inputPos;
+  let h = '';
+  for (let i = 0; i < w.length; i++) {
+    if      (i <  p) h += `<span class="ch-done">${w[i]}</span>`;
+    else if (i === p) h += `<span class="ch-cur">${w[i]}</span>`;
+    else              h += `<span class="ch-rest">${w[i]}</span>`;
+  }
+  document.getElementById('word-kanji').textContent = G.currentWord.k;
+  document.getElementById('word-roman').innerHTML   = h;
+  const nw = G.nextWordEntry;
+  document.getElementById('next-word').textContent  = nw ? nw.k + '　' + nw.w : '';
+}
+
+// ══════════════════════════════════════════════════════
+//  INPUT
+// ══════════════════════════════════════════════════════
+document.getElementById('type-input').addEventListener('input', e => {
+  if (G.dead || !G.currentWord) return;
+  const val = e.target.value.toLowerCase();
+  const w   = G.currentWord.w;
+  G.totalKeys++;
+
+  if (w.startsWith(val)) {
+    G.inputPos = val.length;
+    G.correctKeys++;
+    renderWord();
+    if (val === w) onWordSuccess();
+  } else {
+    e.target.value = w.slice(0, G.inputPos);
+    document.getElementById('word-roman').style.color = '#ff6060';
+    setTimeout(() => { document.getElementById('word-roman').style.color = ''; }, 180);
+  }
+});
+
+document.getElementById('type-input').addEventListener('blur', () => {
+  if (document.getElementById('screen-game').style.display !== 'none') {
+    setTimeout(() => document.getElementById('type-input').focus(), 10);
+  }
+});
+
+document.addEventListener('keydown', e => {
+  // Keep focus on input during game
+  if (document.getElementById('screen-game').style.display !== 'none') {
+    document.getElementById('type-input').focus();
+  }
+  // Secret code detection (single printable chars)
+  if (e.key.length === 1) checkSecretCodes(e.key.toLowerCase());
+});
+
+document.getElementById('screen-game').addEventListener('click', () => {
+  document.getElementById('type-input').focus();
+});
+
+// ══════════════════════════════════════════════════════
+//  WORD SUCCESS → player attacks
+// ══════════════════════════════════════════════════════
+function onWordSuccess() {
+  clearInterval(G.wordTimer);
+  G.wordsCleared++;
+  G.combo++;
+  if (G.combo > G.maxCombo) G.maxCombo = G.combo;
+
+  // Damage
+  let dmg;
+  if (CHEATS.oneHit) {
+    dmg = G.enemyHp; // instant kill
+  } else {
+    const base = 200 + G.currentWord.w.length * 80;
+    dmg = Math.round(base * (1 + (G.combo-1) * 0.1));
+  }
+  G.enemyHp  = Math.max(0, G.enemyHp - dmg);
+  G.score   += dmg * G.combo;
+  G.playerSc = Math.min(SC_MAX, G.playerSc + 3);
+
+  // Player attack animation
+  const pc = document.getElementById('player-char');
+  const es = document.getElementById('enemy-sprite');
+  pc.style.animation = 'playerAtk 0.4s ease';
+  setTimeout(() => { pc.style.animation = ''; }, 420);
+  setTimeout(() => {
+    es.style.animation = 'enemyHit 0.4s ease';
+    setTimeout(() => { es.style.animation = 'idleBob 2.2s ease-in-out infinite'; }, 420);
+    const rect = document.getElementById('enemy-char').getBoundingClientRect();
+    spawnFloat(CHEATS.oneHit ? 'OHKO!!!' : dmg.toLocaleString(),
+               rect.left + rect.width*0.1, rect.top + rect.height*0.15, 'enemy');
+  }, 200);
+
+  updateBars();
+
+  if (G.enemyHp <= 0) { setTimeout(() => endGame(true), 600); return; }
+
+  pickNextWord();
+  renderWord();
+  startWordTimer();
+}
+
+// ══════════════════════════════════════════════════════
+//  WORD FAIL → penalty
+// ══════════════════════════════════════════════════════
+function onWordFail() {
+  if (G.dead) return;
+  G.combo = 0;
+
+  if (!CHEATS.godMode) {
+    const pen = Math.round(G.enemy.atk * 1.5);
+    G.playerHp = Math.max(0, G.playerHp - pen);
+    triggerEnemyHitFX(pen);
+    updateBars();
+    if (G.playerHp <= 0) {
+      G.dead = true;
+      clearInterval(G.wordTimer); clearInterval(G.atkTimer);
+      setTimeout(() => endGame(false), 600);
+      return;
+    }
+  } else {
+    // god mode: show BLOCKED, no damage
+    const rect = document.getElementById('player-char').getBoundingClientRect();
+    spawnFloat('⛨ BLOCKED!', rect.left, rect.top + rect.height*0.3, 'player');
+  }
+
+  pickNextWord();
+  renderWord();
+  startWordTimer();
+}
+
+// ══════════════════════════════════════════════════════
+//  ENEMY AUTO ATTACK
+// ══════════════════════════════════════════════════════
+function enemyAutoAttack() {
+  if (G.dead || G.enemyHp <= 0) return;
+
+  if (!CHEATS.godMode) {
+    const dmg = G.enemy.atk;
+    G.playerHp = Math.max(0, G.playerHp - dmg);
+    G.enemySc  = Math.min(SC_MAX, G.enemySc + 5);
+    triggerEnemyHitFX(dmg);
+    updateBars();
+    if (G.playerHp <= 0) {
+      G.dead = true;
+      clearInterval(G.wordTimer); clearInterval(G.atkTimer);
+      setTimeout(() => endGame(false), 600);
+    }
+  } else {
+    // 無敵: show BLOCKED animation only
+    const ec = document.getElementById('enemy-char');
+    ec.style.animation = 'enemyAtk 0.4s ease';
+    setTimeout(() => { ec.style.animation = ''; }, 420);
+    setTimeout(() => {
+      const rect = document.getElementById('player-char').getBoundingClientRect();
+      spawnFloat('⛨ 0', rect.left + rect.width*0.2, rect.top + rect.height*0.2, 'player');
+    }, 220);
+  }
+}
+
+function triggerEnemyHitFX(dmg) {
+  const ec = document.getElementById('enemy-char');
+  const ps = document.getElementById('player-sprite');
+  ec.style.animation = 'enemyAtk 0.4s ease';
+  setTimeout(() => { ec.style.animation = ''; }, 420);
+  setTimeout(() => {
+    // Screen shake
+    const sg = document.getElementById('screen-game');
+    sg.style.animation = 'shake 0.35s ease';
+    setTimeout(() => { sg.style.animation = ''; }, 360);
+    // Red flash
+    const ov = document.getElementById('hit-overlay');
+    ov.classList.add('flash');
+    setTimeout(() => ov.classList.remove('flash'), 150);
+    // Player sprite flash
+    ps.style.animation = 'playerHitAnim 0.4s ease';
+    setTimeout(() => { ps.style.animation = ''; }, 420);
+    // Damage float
+    const rect = document.getElementById('player-char').getBoundingClientRect();
+    spawnFloat(dmg.toLocaleString(), rect.left + rect.width*0.2, rect.top + rect.height*0.15, 'player');
+  }, 200);
+}
+
+// ══════════════════════════════════════════════════════
+//  FLOAT TEXT
+// ══════════════════════════════════════════════════════
+function spawnFloat(text, x, y, who) {
+  const el = document.createElement('div');
+  el.className = 'float-dmg ' + who;
+  el.textContent = text;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  if (text.includes('BLOCKED') || text.includes('0')) {
+    el.style.color = '#00ff88';
+    el.style.fontSize = '22px';
+  }
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+// ══════════════════════════════════════════════════════
+//  BARS
+// ══════════════════════════════════════════════════════
+function updateBars() {
+  const pp  = Math.max(0, (G.playerHp / G.playerMaxHp) * 100);
+  const ep  = Math.max(0, (G.enemyHp  / G.enemyMaxHp)  * 100);
+  const psp = (G.playerSc / SC_MAX) * 100;
+  const esp = (G.enemySc  / SC_MAX) * 100;
+  document.getElementById('player-hp-bar').style.width = pp + '%';
+  document.getElementById('enemy-hp-bar').style.width  = ep + '%';
+  document.getElementById('player-sc-bar').style.width = psp + '%';
+  document.getElementById('enemy-sc-bar').style.width  = esp + '%';
+  document.getElementById('player-hp-num').textContent =
+    Math.max(0,G.playerHp).toLocaleString()+'/'+G.playerMaxHp.toLocaleString();
+  document.getElementById('enemy-hp-num').textContent  =
+    Math.max(0,G.enemyHp).toLocaleString()+'/'+G.enemyMaxHp.toLocaleString();
+  document.getElementById('player-sc-num').textContent = G.playerSc+'/'+SC_MAX;
+  document.getElementById('enemy-sc-num').textContent  = G.enemySc+'/'+SC_MAX;
+}
+
+// ══════════════════════════════════════════════════════
+//  END GAME
+// ══════════════════════════════════════════════════════
+function endGame(win) {
+  clearInterval(G.wordTimer);
+  clearInterval(G.atkTimer);
+  const acc     = G.totalKeys > 0 ? Math.round((G.correctKeys/G.totalKeys)*100) : 100;
+  const elapsed = Math.max(1, (Date.now()-G.startTime)/60000);
+  const wpm     = Math.round(G.wordsCleared/elapsed);
+  const pts     = Math.round(wpm*(acc/100)*10);
+
+  const badge = document.getElementById('result-badge');
+  badge.textContent = win ? '🏆 VICTORY' : '💀 DEFEAT';
+  badge.className   = 'result-badge ' + (win ? 'win' : 'lose');
+  document.getElementById('result-msg').textContent =
+    win ? `「${G.enemy.name}」を打ち倒した！` : `「${G.enemy.name}」に敗北…`;
+  document.getElementById('r-score').textContent = G.score.toLocaleString();
+  document.getElementById('r-wpm').textContent   = wpm;
+  document.getElementById('r-acc').textContent   = acc + '%';
+  document.getElementById('r-combo').textContent = G.maxCombo;
+  document.getElementById('r-words').textContent = G.wordsCleared;
+  document.getElementById('r-pts').textContent   = pts;
+  showScreen('result');
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+initTitle();
+showScreen('title');
+</script>
+
+</body>
+</html>
